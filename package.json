@@ -1,0 +1,28 @@
+{
+  "name": "simple-github-authentication",
+  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+  },
+  "devDependencies": {
+    "@dobuki/dev-dependencies": "^1.0.1",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/The-Brains/SimpleGithubAuthentication.git"
+  },
+  "author": {
+    "name": "Jack Le Hamster",
+    "email": "jacklehamster@gmail.com"
+  },
+  "description": "Github authentication flow made easy",
+  "homepage": "<fill in homepage>"
+}
