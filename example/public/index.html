@@ -3,8 +3,31 @@
   <head>
     <title>SimpleGithubAuthentication demo</title>
   </head>
-  <script>
+  <script type="module">
+    import { appRegister  } from "./dist/index.js";
     const loginPath = "/github/login/";
+
+    fetch("is-node-server.json").then(res => res.json()).then(isNodeServer => {
+      document.getElementById("serverless-demo").checked = !isNodeServer;
+      if (isNodeServer) {
+        makeServerless(false);
+      }
+    });
+
+    function isServerless() {
+      return document.getElementById("serverless-demo").checked;
+    }
+
+    async function makeServerless(serverless) {
+      const res = await fetch(`make-serverless.json?serverless=${serverless}`);
+      const json = await res.json();
+      document.getElementById("serverless-demo").checked = json.serverless;
+      document.getElementById("registration-response").innerText = ``;
+      document.getElementById("link-div").style.display = "none";
+      document.getElementById("cors-restriction").style.display =  json.serverless?"":"none";
+      console.log(json);
+    }
+    window.makeServerless = makeServerless;
 
     function getInputs() {
       return {
@@ -17,6 +40,12 @@
 
     async function registerClient() {
       const { app_id, callback, client_id, client_secret } = getInputs();
+      if (isServerless()) {
+        appRegister({ app_id, callback, client_id, client_secret });
+        document.getElementById("registration-response").innerText = `"${app_id}" registered locally.`;
+        document.getElementById("link-div").style.display = "";
+        return;
+      }
       //  one time registration
       const params = new URLSearchParams({
         app_id,
@@ -26,7 +55,6 @@
       });
       const response = await fetch(`/github/register-client/?${params}`);
       const result = await response.json();
-      console.log(result);
       document.getElementById("registration-response").innerText = JSON.stringify(result);
       if (result.success) {
         document.getElementById("link-div").style.display = "";
@@ -40,14 +68,14 @@
 
       //  fetch
       {
-        const url = `${loginPath}${app_id}`;
+        const url = `${loginPath}?app=${app_id}`;
         window.open(url);
       }
     }
 
     function updateCallbacks() {
       const { app_id, callback, client_id, client_secret } = getInputs();
-      const url = `http://${location.host}/github/auth/${app_id}`;
+      const url = `http://${location.host}/github/auth?app=${app_id}`;
       document.getElementById("callbackUrl").innerText = url;
 
       document.getElementById("app_id_code").textContent = app_id;
@@ -55,10 +83,7 @@
       document.getElementById("client_secret_code").textContent = client_secret;
       document.getElementById("callback_code").textContent = callback;
       {
-        const params = new URLSearchParams({
-          callback,
-        });
-        const url = `http://${location.host}${loginPath}${app_id}?${params}`;
+        const url = `http://${location.host}${loginPath}?app=${app_id}`;
         document.getElementById("login-link").href = url;
         document.getElementById("login-link").textContent = url;
       }
@@ -78,6 +103,8 @@
       unHash();
       updateCallbacks();
     });
+    window.registerClient = registerClient;
+    window.updateCallbacks = updateCallbacks;
   </script>
   <style>
     label {
@@ -86,6 +113,9 @@
   </style>
   <body>
     <h1>SimpleGithubAuthentication demo</h1>
+    <div>
+      <label for="serverless-demo">serverless demo</label><input id="serverless-demo" type="checkbox" checked onchange="makeServerless(this.checked)">
+    </div>
     <div>
       This demo shows how to use the package to retrieve an authToken from Github, allowing you to perform operations on Github repos.
     </div>
@@ -115,7 +145,7 @@
     <div>
       <label for="client_secret">client_secret: </label>
       <input type="password" style="width: 300px" id="client_secret" placeholder="Enter your client_secret" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
-      <span style="cursor: pointer" onClick="document.getElementById('client_secret').type = document.getElementById('client_secret').type==='password'?'':'password'">👁️</span>
+      <span style="cursor: pointer; opacity: .5;" onClick="const newHide=document.getElementById('client_secret').type!=='password';document.getElementById('client_secret').type = !newHide?'':'password'; this.style.opacity=newHide?.5:1">👁️</span>
       <div>
         Paste the client_secret from the github app
       </div>
@@ -156,6 +186,16 @@
       <div id="registration-response" style="border: 1px solid black"></div>
       <div id="link-div" style="display: none">
         <p>Note: For your security, the client is registered for only 1 request, and will expire after 1 min if not used.</p>
+
+        <div style="color: red;" id="cors-restriction">
+          Note: Due to CORS restriction, you cannot make a POST call directly into Github API from a browser.
+          To address that for the demo, we bypass that restriction by going through a proxy.
+          To enable that proxy, first click on <a target="_blank" href="https://cors-anywhere.herokuapp.com/corsdemo">https://cors-anywhere.herokuapp.com/corsdemo</a>
+          and click on [Request temporary access]
+          <p></p>
+        </div>
+
+
         <div>
           Then the following link opens the Github login page to fetch the auth token:
         </div>

@@ -32,4 +32,13 @@ export class ClientManager {
     const app_index = this.clientConfigs.findIndex(config => app_id == config.app_id);
     return app_index >= 0 ? this.clientConfigs[app_index] : undefined;
   }
+
+  saveToLocalStorage() {
+    localStorage.setItem("githubAuthClients", JSON.stringify(this.clientConfigs));
+  }
+
+  restoreFromLocalStorage() {
+    const clientsJson = localStorage.getItem("githubAuthClients") ?? "[]";
+    this.clientConfigs = JSON.parse(clientsJson);
+  }
 }

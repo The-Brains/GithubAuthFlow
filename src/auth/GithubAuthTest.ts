@@ -75,7 +75,7 @@ describe('GithubAuth', () => {
   });
 
   test('getRedirectUrl should return the correct URL', () => {
-    const url = githubAuth.getRedirectUrl({
+    const url = githubAuth.getAuthTokenFetchUrl({
       code: 'code123',
       client_id: 'client1',
       client_secret: 'secret1',
@@ -129,8 +129,8 @@ describe('GithubAuth', () => {
 
     expect(clientInfo).toEqual([{
       app_id: 'app1',
-      loginUrl: 'http://localhost/login/app1',
-      authUrl: 'http://localhost/auth/app1',
+      loginUrl: 'http://localhost/login?app=app1',
+      authUrl: 'http://localhost/auth?app=app1',
       callbackUrl: clientConfig.callback,
       oneTime: clientConfig.oneTime,
     }]);

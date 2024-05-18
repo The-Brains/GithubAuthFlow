@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SimpleGithubAuthentication demo</title>
+
+  </head>
+  <body>
+
+  </body>
+  <script>
+    const params = new URLSearchParams(location.search);
+    params.forEach((value, key) => {
+      const div = document.body.appendChild(document.createElement("div"));
+      div.textContent = `${key} = ${value}`;
+    });
+  </script>  
+</html>

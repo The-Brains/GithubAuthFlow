@@ -6,12 +6,11 @@ import type { ClientConfig } from "./ClientConfig";
 import { ClientManager } from "./ClientManager";
 
 interface LoginParam {
-  state?: string;
+  app_id: string;
   redirect_uri: string;
   login?: string;
   allow_signup?: string;
   scope?: string;
-  app_id: string;
 }
 
 interface RedirectParam {
@@ -37,7 +36,7 @@ export const ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
  * This class handles the Github authentication flow.
  */
 export class GithubAuth {
-  private readonly clientManager = new ClientManager();
+  readonly clientManager = new ClientManager();
 
   /**
    * Generate the state to be passed and checked.
@@ -87,24 +86,6 @@ export class GithubAuth {
   }
 
   /**
-   * Open the Github login page to enable login into Github.
-   * You don't need to call this when running this code on a server.
-   * This is used in case you want to perform the first part of the login on the
-   * client side.
-   *
-   * @param loginParam parameters used for login. See getAuthUrl.
-   * @returns true if we're able to open the login page, false otherwise.
-   */
-  openLoginPage(loginParam: LoginParam) {
-    const url = this.getAuthUrl(loginParam);
-    if (url) {
-      location.href = url;
-      return true;
-    }
-    return false;
-  }
-
-  /**
    * Returns the URL to be sent to in order to retrieve the auth token.
    *
    * @param code Code passed after the login page has redirected.
@@ -112,7 +93,7 @@ export class GithubAuth {
    * @returns A url to be sent to in order to retrieve the auth token.
    * Note: This code uses client_secret, so it shouldn't be used in a browser.
    */
-  getRedirectUrl({ code, client_id, client_secret }: RedirectParam) {
+  getAuthTokenFetchUrl({ code, client_id, client_secret }: RedirectParam) {
     const params = new URLSearchParams({
       client_id,
       client_secret,
@@ -128,7 +109,9 @@ export class GithubAuth {
    * @param redirectParam see getRedirectURl
    * @returns the response from github including the auth_token
    */
-  async fetchCallbackWithAuthToken({ code, state, app_id }: { code: string; state: string;  app_id: string; }): Promise<string|undefined> {
+  async fetchCallbackWithAuthToken({ code, state, app_id }: { code: string; state: string;  app_id: string; },
+    cors?: boolean
+  ): Promise<string|undefined> {
     const clientConfig = this.clientManager.findClientConfig(app_id);
     if (!clientConfig) {
       throw new Error("Invalid app_id");
@@ -141,7 +124,7 @@ export class GithubAuth {
       throw new Error("State doesn't match.");
     }
 
-    const url = this.getRedirectUrl({
+    const url = this.getAuthTokenFetchUrl({
       code,
       client_id: clientConfig.client_id,
       client_secret: clientConfig.client_secret,
@@ -150,13 +133,13 @@ export class GithubAuth {
       return;
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(cors ? `https://cors-anywhere.herokuapp.com/${url}` :url, {
       method: "POST",
       headers: {
         Accept: "application/json",
       },
     });
-    const result = await response.json();
+    const result: AuthResult = await response.json();
     const params = new URLSearchParams(!result ? { success: "false" }: {
       access_token: result.access_token ?? "",
       expires_in: result.expires_in ?? "",
@@ -183,8 +166,8 @@ export class GithubAuth {
   }) {
     return this.clientManager.clientConfigs.map(client => ({
       app_id: client.app_id,
-      loginUrl: `${host}${loginPath}/${client.app_id}`,
-      authUrl: `${host}${authPath}/${client.app_id}`,
+      loginUrl: `${host}${loginPath}?app=${client.app_id}`,
+      authUrl: `${host}${authPath}?app=${client.app_id}`,
       callbackUrl: client.callback,
       oneTime: client.oneTime,
     }));
@@ -195,5 +178,65 @@ export class GithubAuth {
    */
   addClientConfig(config: ClientConfig) {
     this.clientManager.clientConfigs.push(config);
+  }
+
+  /**
+   * Open the Github login page to enable login into Github.
+   * You don't need to call this when running this code on a server.
+   * This is used in case you want to perform the first part of the login on the
+   * client side.
+   *
+   * @param loginParam parameters used for login. See getAuthUrl.
+   * @returns true if we're able to open the login page, false otherwise.
+   */
+  openLoginPage(loginParam: LoginParam, newWindow?: boolean) {
+    const url = this.getAuthUrl(loginParam);
+    if (url) {
+      if (newWindow) {
+        open(url);
+      } else {
+        location.href = url;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Parse the login parameters and use it to redirect to the Github login
+   */
+  redirectLoginPage() {
+    const params = new URLSearchParams(location.search);
+    const app_id = params.get("app");
+    if (app_id) {
+      this.openLoginPage({ app_id, redirect_uri: `${location.protocol}//${location.host}/github/auth?app=${app_id}` });
+    } else {
+      console.warn("Missing ?app= parameter");
+    }
+  }
+
+  async redirectAuthPage(saveToLocalStorage?: boolean, newWindow?: boolean) {
+    const params = new URLSearchParams(location.search);
+    const app_id = params.get("app");
+    const code = params.get("code");
+    const state = params.get("state");
+    if (app_id && code && state) {
+      const url = await this.fetchCallbackWithAuthToken({ app_id, code, state }, true);
+      if (saveToLocalStorage) {
+        this.clientManager.saveToLocalStorage();
+      }
+      if (url) {
+        if (newWindow) {
+          open(url);
+        } else {
+          location.href = url;
+        }
+  
+      } else {
+        console.warn("Unable to redirect with app="+ app_id);
+      }
+    } else {
+      console.warn("Missing parameters. app, code and state required");
+    }
   }
 }

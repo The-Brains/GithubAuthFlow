@@ -5,6 +5,8 @@ import type { ClientConfig } from "./ClientConfig";
 interface LoginQuery {
   githubUsername?: string;
   app_id?: string;
+  allow_signup?: string;
+  scope?: string;
 }
 
 interface AuthQuery {
@@ -34,6 +36,7 @@ const ONE_TIME_CLIENT_EXPIRATION_MS = 60000;
 
 export class GithubAuthServer {
   githubAuth = new GithubAuth();
+  active = true;
 
   constructor(app: Express, {
     clientConfigs,
@@ -47,7 +50,11 @@ export class GithubAuthServer {
   }) {
     clientConfigs.forEach(config => this.githubAuth.addClientConfig(config));
 
-    app.get(infoPath, (req, res) => {
+    app.get(infoPath, (req, res, next) => {
+      if (!this.active) {
+        next();
+        return;
+      }
       const host = `${req.protocol ?? "http"}://${req.headers.host}`;
       res.json({
         host,
@@ -57,16 +64,27 @@ export class GithubAuthServer {
       });
     });
 
-    app.get(`${loginPath}/:app_id`, (req, res) => {
-      const app_id = req.params.app_id;
+    app.get(`${loginPath}`, (req, res, next) => {
+      if (!this.active) {
+        next();
+        return;
+      }
+      const app_id = req.query.app as string;
+      if (!app_id) {
+        res.status(400).send({
+          message: 'Missing "?app=" parameter.'
+         });
+      }
       const host = `${req.protocol ?? "http"}://${req.headers.host}`;
       const query = req.query as unknown as LoginQuery;
-      const redirect_uri = `${host}${authPath}/${app_id}`;
+      const redirect_uri = `${host}${authPath}?app=${app_id}`;
       try {
         const authUrl = this.githubAuth.getAuthUrl({
           app_id,
           redirect_uri,
           login: query.githubUsername,
+          allow_signup: query.allow_signup,
+          scope: query.scope,
         });
         if (authUrl) {
           res.redirect(authUrl);
@@ -84,8 +102,17 @@ export class GithubAuthServer {
       }
     });
 
-    app.get(`${authPath}/:app_id`, async (req, res) => {
-      const app_id = req.params.app_id;
+    app.get(`${authPath}`, async (req, res, next) => {
+      if (!this.active) {
+        next();
+        return;
+      }
+      const app_id = req.query.app as string;
+      if (!app_id) {
+        res.status(400).send({
+          message: 'Missing "?app=" parameter.'
+         });
+      }
       const query = req.query as unknown as AuthQuery;
 
       const result = await this.githubAuth.fetchCallbackWithAuthToken({
@@ -100,14 +127,22 @@ export class GithubAuthServer {
       }
     });
 
-    app.get(resultPath, (req, res) => {
+    app.get(resultPath, (req, res, next) => {
+      if (!this.active) {
+        next();
+        return;
+      }
       res.json({
         success: true,
         ...req.query,
       });
     });
 
-    app.get(registerClientPath, (req, res) => {
+    app.get(registerClientPath, (req, res, next) => {
+      if (!this.active) {
+        next();
+        return;
+      }
       const query = req.query;
       const { app_id, client_secret, client_id, oneTime, callback } = query as ClientRegistrationQuery;
       if (!app_id || !client_id || !client_secret || !callback) {
