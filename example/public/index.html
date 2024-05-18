@@ -62,9 +62,20 @@
         document.getElementById("login-link").href = url;
         document.getElementById("login-link").textContent = url;
       }
+      const tag = btoa([app_id, client_id, client_secret, callback].join(","));
+      location.hash = tag;
+    }
+
+    function unHash() {
+      const [app_id, client_id, client_secret, callback] = atob(location.hash.slice(1)).split(",");
+      document.getElementById("app_id").value = app_id?.length ? app_id : "my-app-id";
+      document.getElementById("client_id").value = client_id ?? "";
+      document.getElementById("client_secret").value = client_secret ?? "";
+      document.getElementById("callback").value = callback?.length ? callback : `${location.protocol}//${location.host}/github/result`;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      unHash();
       updateCallbacks();
     });
   </script>
@@ -89,28 +100,29 @@
     </div>
     <div>
       <label for="app_id">app_id: </label>
-      <input style="width: 300px" id="app_id" placeholder="app_id" value="my-app-id" onkeydown="updateCallbacks()" onchange="updateCallbacks()">
+      <input style="width: 300px" id="app_id" placeholder="app_id" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
       <div>
         This can be your Github app_id or anything you choose
       </div>
     </div>
     <div>
       <label for="client_id">client_id: </label>
-      <input style="width: 300px" id="client_id" placeholder="Enter your client_id" onkeydown="updateCallbacks()" onchange="updateCallbacks()">
+      <input style="width: 300px" id="client_id" placeholder="Enter your client_id" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
       <div>
         Paste the client_id from the github app
       </div>
     </div>
     <div>
       <label for="client_secret">client_secret: </label>
-      <input style="width: 300px" id="client_secret" placeholder="Enter your client_secret" onkeydown="updateCallbacks()" onchange="updateCallbacks()">
+      <input type="password" style="width: 300px" id="client_secret" placeholder="Enter your client_secret" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
+      <span style="cursor: pointer" onClick="document.getElementById('client_secret').type = document.getElementById('client_secret').type==='password'?'':'password'">👁️</span>
       <div>
         Paste the client_secret from the github app
       </div>
     </div>
     <div>
       <label for="callback">callback: </label>
-      <input style="width: 300px" id="callback" value="http://localhost:3000/github/result" onkeydown="updateCallbacks()" onchange="updateCallbacks()">
+      <input style="width: 300px" id="callback" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
       <div>
         The url this goes too after fetching the auth_token from github. In this demo, this goes to a page that displays just the result.
       </div>
