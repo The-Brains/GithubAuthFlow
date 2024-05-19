@@ -70,7 +70,6 @@ export class GithubAuth {
     if (!clientConfig) {
       throw new Error("Unable to use client config. Specify a correct app_id.");
     }
-    alert(redirect_uri);
     const params = new URLSearchParams({
       client_id: clientConfig.client_id,
       state: this.getState(clientConfig),
