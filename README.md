@@ -1,6 +1,10 @@
 # SimpleGithubAuthentication
 Github authentication flow made easy
 
+## Demo
+
+[Click here to view the demo](https://the-brains.github.io/SimpleGithubAuthentication/example/public)
+
 ## Description
 
 To perform Github operation, you need an authToken. This can be a personal token from your Github account, or an authToken optained by authenticating with an app.
