@@ -1,0 +1,17 @@
+{
+  "name": "demo",
+  "scripts": {
+    "start": "bun run build && bun run index.ts --watch",
+    "build": "bun i && bun build --target=node ./src/index.ts --outfile=public/dist/index.js"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0",
+    "simple-github-authentication": "link:simple-github-authentication"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SimpleGithubAuthentication demo</title>
+  </head>
+  <script type="module">
+    import { appRegister  } from "./dist/index.js";
+    const loginPath = "github/login/";
+
+    fetch("is-node-server.json").then(res => res.json()).then(isNodeServer => {
+      document.getElementById("serverless-demo").checked = !isNodeServer;
+      if (isNodeServer) {
+        makeServerless(false);
+      }
+    });
+
+    function isServerless() {
+      return document.getElementById("serverless-demo").checked;
+    }
+
+    async function makeServerless(serverless) {
+      const res = await fetch(`make-serverless.json?serverless=${serverless}`);
+      const json = await res.json();
+      document.getElementById("serverless-demo").checked = json.serverless;
+      document.getElementById("registration-response").innerText = ``;
+      document.getElementById("link-div").style.display = "none";
+      document.getElementById("cors-restriction").style.display =  json.serverless?"":"none";
+      console.log(json);
+    }
+    window.makeServerless = makeServerless;
+
+    function getInputs() {
+      return {
+        app_id: document.getElementById("app_id").value,
+        callback: document.getElementById("callback").value,
+        client_id: document.getElementById("client_id").value,
+        client_secret: document.getElementById("client_secret").value,
+      }
+    }
+
+    async function registerClient() {
+      const { app_id, callback, client_id, client_secret } = getInputs();
+      if (isServerless()) {
+        appRegister({ app_id, callback, client_id, client_secret });
+        document.getElementById("registration-response").innerText = `"${app_id}" registered locally.`;
+        document.getElementById("link-div").style.display = "";
+        return;
+      }
+      //  one time registration
+      const params = new URLSearchParams({
+        app_id,
+        client_id,
+        client_secret,
+        callback,
+      });
+      const response = await fetch(`${location.pathname}github/register-client/?${params}`);
+      const result = await response.json();
+      document.getElementById("registration-response").innerText = JSON.stringify(result);
+      if (result.success) {
+        document.getElementById("link-div").style.display = "";
+      }
+    }
+
+    async function requestAuthToken() {
+      const { app_id, client_id, client_secret } = getInputs();
+      //  one time registration
+      registerClient();
+
+      //  fetch
+      {
+        const url = `${loginPath}?app=${app_id}`;
+        window.open(url);
+      }
+    }
+
+    function updateCallbacks() {
+      const { app_id, callback, client_id, client_secret } = getInputs();
+      const url = `${location.protocol}//${location.host}${location.pathname}github/auth/?app=${app_id}`;
+      document.getElementById("callbackUrl").innerText = url;
+
+      document.getElementById("app_id_code").textContent = app_id;
+      document.getElementById("client_id_code").textContent = client_id;
+      document.getElementById("client_secret_code").textContent = client_secret;
+      document.getElementById("callback_code").textContent = callback;
+      {
+        const url = `${location.protocol}//${location.host}${location.pathname}${loginPath}?app=${app_id}`;
+        document.getElementById("login-link").href = url;
+        document.getElementById("login-link").textContent = url;
+      }
+      const tag = btoa([app_id, client_id, client_secret, callback].join(","));
+      location.hash = tag;
+    }
+
+    function unHash() {
+      const [app_id, client_id, client_secret, callback] = atob(location.hash.slice(1)).split(",");
+      document.getElementById("app_id").value = app_id?.length ? app_id : "my-app-id";
+      document.getElementById("client_id").value = client_id ?? "";
+      document.getElementById("client_secret").value = client_secret ?? "";
+      document.getElementById("callback").value = callback?.length ? callback : `${location.protocol}//${location.host}${location.pathname}github/result`;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      unHash();
+      updateCallbacks();
+    });
+    window.registerClient = registerClient;
+    window.updateCallbacks = updateCallbacks;
+  </script>
+  <style>
+    label {
+      font-size: 20pt;
+    }
+  </style>
+  <body>
+    <h1>SimpleGithubAuthentication demo</h1>
+    <div>
+      <label for="serverless-demo">serverless demo</label><input id="serverless-demo" type="checkbox" checked onchange="makeServerless(this.checked)">
+    </div>
+    <div>
+      This demo shows how to use the package to retrieve an authToken from Github, allowing you to perform operations on Github repos.
+    </div>
+    <p></p>
+    <div>
+      To use the demo, fill out the following information.
+      You can enter your client_id and client_secret to test the server.
+      We don't store it. We only use it temporarily to demo authentication, but feel free to regenerate a new client_secret after testing the demo.
+    </div>
+    <div>
+      <a href="https://github.com/settings/apps" target="_blank">To get the client_id, client_secret, go to your Github app by clicking [Edit]</a>
+    </div>
+    <div>
+      <label for="app_id">app_id: </label>
+      <input style="width: 300px" id="app_id" placeholder="app_id" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
+      <div>
+        This can be your Github app_id or anything you choose
+      </div>
+    </div>
+    <div>
+      <label for="client_id">client_id: </label>
+      <input style="width: 300px" id="client_id" placeholder="Enter your client_id" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
+      <div>
+        Paste the client_id from the github app
+      </div>
+    </div>
+    <div>
+      <label for="client_secret">client_secret: </label>
+      <input type="password" style="width: 300px" id="client_secret" placeholder="Enter your client_secret" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
+      <span style="cursor: pointer; opacity: .5;" onClick="const newHide=document.getElementById('client_secret').type!=='password';document.getElementById('client_secret').type = !newHide?'':'password'; this.style.opacity=newHide?.5:1">👁️</span>
+      <div>
+        Paste the client_secret from the github app
+      </div>
+    </div>
+    <div>
+      <label for="callback">callback: </label>
+      <input style="width: 300px" id="callback" onkeyup="updateCallbacks()" onchange="updateCallbacks()">
+      <div>
+        The url this goes too after fetching the auth_token from github. In this demo, this goes to a page that displays just the result.
+      </div>
+    </div>
+    <p></p>
+    <p></p>
+    <div>
+      Then, the following url need to be added to your github app's <b>callbackUrls</b> for the authentication flow to work:
+      <div id="callbackUrl" style="border: 1px solid black; background-color: yellow;"></div>
+    </div>
+    <p></p>
+    <div>
+      The app_id, client_id and client_secret needs to be added to the server:
+      <div style="border: 1px solid black; white-space: pre; font-family: 'Courier New', Courier, monospace;">
+        import { GithubAuthServer } from "simple-github-authentication";
+        import express from "express";
+
+        const app = express();
+
+        new GithubAuthServer(app, {
+          clientConfigs: [{
+            app_id: "<span id="app_id_code"></span>",
+            client_id: '<span id="client_id_code"></span>',
+            client_secret: '<span id="client_secret_code"></span>',
+            callback: '<span id="callback_code"></span>',
+          }],
+        });        
+      </div>
+      For this test, you can use the following button in place of the code above.
+      <button onClick="this.disabled = true; registerClient().then(() => this.disabled = false);">Click here to register the client</button>
+      <div id="registration-response" style="border: 1px solid black"></div>
+      <div id="link-div" style="display: none">
+        <p>Note: For your security, the client is registered for only 1 request, and will expire after 1 min if not used.</p>
+
+        <div style="color: red;" id="cors-restriction">
+          Note: Due to CORS restriction, you cannot make a POST call directly into Github API from a browser.
+          To address that for the demo, we bypass that restriction by going through a proxy.
+          To enable that proxy, first click on <a target="_blank" href="https://cors-anywhere.herokuapp.com/corsdemo">https://cors-anywhere.herokuapp.com/corsdemo</a>
+          and click on [Request temporary access]
+          <p></p>
+        </div>
+
+
+        <div>
+          Then the following link opens the Github login page to fetch the auth token:
+        </div>
+        <a target="_blank" id="login-link">link</a>  
+      </div>
+    </div>
+    <p></p>
+
+    <div id="result" style="white-space: pre;">
+      
+    </div>
+  </body>
+</html>
