@@ -75,7 +75,7 @@
 
     function updateCallbacks() {
       const { app_id, callback, client_id, client_secret } = getInputs();
-      const url = `http://${location.host}${location.pathname}github/auth?app=${app_id}`;
+      const url = `http://${location.host}${location.pathname}github/auth/?app=${app_id}`;
       document.getElementById("callbackUrl").innerText = url;
 
       document.getElementById("app_id_code").textContent = app_id;
