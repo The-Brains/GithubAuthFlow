@@ -137,7 +137,7 @@ class GithubAuth {
     const params = new URLSearchParams(location.search);
     const app_id = params.get("app");
     if (app_id) {
-      this.openLoginPage({ app_id, redirect_uri: `${location.protocol}//${location.host}${location.pathname.replace("login", "auth")}?app=${app_id}` });
+      this.openLoginPage({ app_id, redirect_uri: `${location.protocol}//${location.host}${location.pathname.replace("/github/login/", "/github/auth/")}?app=${app_id}` });
     } else {
       console.warn("Missing ?app= parameter");
     }
