@@ -24,7 +24,8 @@ interface ClientRegistrationQuery {
 }
 
 interface Props {
-  clientConfigs: ClientConfig[];
+  clientConfigs?: ClientConfig[];
+  rootPath?: string;
   loginPath?: string;
   authPath?: string;
   infoPath?: string;
@@ -40,17 +41,16 @@ export class GithubAuthServer {
 
   constructor(app: Express, {
     clientConfigs,
-    loginPath = "/github/login",
-    authPath = "/github/auth",
-    infoPath = "/github",
-    resultPath = "/github/result",
-    registerClientPath = "/github/register-client",
-  }: Props = {
-    clientConfigs: [],
-  }) {
-    clientConfigs.forEach(config => this.githubAuth.addClientConfig(config));
+    rootPath = "/",
+    loginPath = "github/login/",
+    authPath = "github/auth/",
+    infoPath = "github/",
+    resultPath = "github/result/",
+    registerClientPath = "github/register-client/",
+  }: Props = {}) {
+    clientConfigs?.forEach(config => this.githubAuth.addClientConfig(config));
 
-    app.get(infoPath, (req, res, next) => {
+    app.get(`${rootPath}${infoPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -59,12 +59,12 @@ export class GithubAuthServer {
       res.json({
         host,
         clients: this.githubAuth.getClientInfo({
-          host, loginPath, authPath,
+          host, loginPath: `${rootPath}${loginPath}`, authPath: `${rootPath}${authPath}`,
         }),
       });
     });
 
-    app.get(`${loginPath}`, (req, res, next) => {
+    app.get(`${rootPath}${loginPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -77,7 +77,7 @@ export class GithubAuthServer {
       }
       const host = `${req.protocol ?? "http"}://${req.headers.host}`;
       const query = req.query as unknown as LoginQuery;
-      const redirect_uri = `${host}${authPath}?app=${app_id}`;
+      const redirect_uri = `${host}${rootPath}${authPath}?app=${app_id}`;
       try {
         const authUrl = this.githubAuth.getAuthUrl({
           app_id,
@@ -102,7 +102,7 @@ export class GithubAuthServer {
       }
     });
 
-    app.get(`${authPath}`, async (req, res, next) => {
+    app.get(`${rootPath}${authPath}`, async (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -127,7 +127,7 @@ export class GithubAuthServer {
       }
     });
 
-    app.get(resultPath, (req, res, next) => {
+    app.get(`${rootPath}${resultPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -138,7 +138,7 @@ export class GithubAuthServer {
       });
     });
 
-    app.get(registerClientPath, (req, res, next) => {
+    app.get(`${rootPath}${registerClientPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;

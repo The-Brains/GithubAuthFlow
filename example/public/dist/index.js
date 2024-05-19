@@ -137,7 +137,7 @@ class GithubAuth {
     const params = new URLSearchParams(location.search);
     const app_id = params.get("app");
     if (app_id) {
-      this.openLoginPage({ app_id, redirect_uri: `${location.protocol}//${location.host}/github/auth?app=${app_id}` });
+      this.openLoginPage({ app_id, redirect_uri: `${location.protocol}//${location.host}${location.pathname.replace("login", "auth")}?app=${app_id}` });
     } else {
       console.warn("Missing ?app= parameter");
     }
@@ -175,16 +175,15 @@ class GithubAuthServer {
   active = true;
   constructor(app, {
     clientConfigs,
-    loginPath = "/github/login",
-    authPath = "/github/auth",
-    infoPath = "/github",
-    resultPath = "/github/result",
-    registerClientPath = "/github/register-client"
-  } = {
-    clientConfigs: []
-  }) {
-    clientConfigs.forEach((config) => this.githubAuth.addClientConfig(config));
-    app.get(infoPath, (req, res, next) => {
+    rootPath = "/",
+    loginPath = "github/login/",
+    authPath = "github/auth/",
+    infoPath = "github/",
+    resultPath = "github/result/",
+    registerClientPath = "github/register-client/"
+  } = {}) {
+    clientConfigs?.forEach((config) => this.githubAuth.addClientConfig(config));
+    app.get(`${rootPath}${infoPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -194,12 +193,12 @@ class GithubAuthServer {
         host,
         clients: this.githubAuth.getClientInfo({
           host,
-          loginPath,
-          authPath
+          loginPath: `${rootPath}${loginPath}`,
+          authPath: `${rootPath}${authPath}`
         })
       });
     });
-    app.get(`${loginPath}`, (req, res, next) => {
+    app.get(`${rootPath}${loginPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -212,7 +211,7 @@ class GithubAuthServer {
       }
       const host = `${req.protocol ?? "http"}://${req.headers.host}`;
       const query = req.query;
-      const redirect_uri = `${host}${authPath}?app=${app_id}`;
+      const redirect_uri = `${host}${rootPath}${authPath}?app=${app_id}`;
       try {
         const authUrl = this.githubAuth.getAuthUrl({
           app_id,
@@ -236,7 +235,7 @@ class GithubAuthServer {
         return;
       }
     });
-    app.get(`${authPath}`, async (req, res, next) => {
+    app.get(`${rootPath}${authPath}`, async (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -259,7 +258,7 @@ class GithubAuthServer {
         res.status(404).send("Unable to get auth token.");
       }
     });
-    app.get(resultPath, (req, res, next) => {
+    app.get(`${rootPath}${resultPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;
@@ -269,7 +268,7 @@ class GithubAuthServer {
         ...req.query
       });
     });
-    app.get(registerClientPath, (req, res, next) => {
+    app.get(`${rootPath}${registerClientPath}`, (req, res, next) => {
       if (!this.active) {
         next();
         return;

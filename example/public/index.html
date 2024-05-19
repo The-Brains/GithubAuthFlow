@@ -5,7 +5,7 @@
   </head>
   <script type="module">
     import { appRegister  } from "./dist/index.js";
-    const loginPath = "/github/login/";
+    const loginPath = "github/login/";
 
     fetch("is-node-server.json").then(res => res.json()).then(isNodeServer => {
       document.getElementById("serverless-demo").checked = !isNodeServer;
@@ -53,7 +53,7 @@
         client_secret,
         callback,
       });
-      const response = await fetch(`/github/register-client/?${params}`);
+      const response = await fetch(`${location.pathname}github/register-client/?${params}`);
       const result = await response.json();
       document.getElementById("registration-response").innerText = JSON.stringify(result);
       if (result.success) {
@@ -75,7 +75,7 @@
 
     function updateCallbacks() {
       const { app_id, callback, client_id, client_secret } = getInputs();
-      const url = `http://${location.host}/github/auth?app=${app_id}`;
+      const url = `http://${location.host}${location.pathname}github/auth?app=${app_id}`;
       document.getElementById("callbackUrl").innerText = url;
 
       document.getElementById("app_id_code").textContent = app_id;
@@ -83,7 +83,7 @@
       document.getElementById("client_secret_code").textContent = client_secret;
       document.getElementById("callback_code").textContent = callback;
       {
-        const url = `http://${location.host}${loginPath}?app=${app_id}`;
+        const url = `http://${location.host}${location.pathname}${loginPath}?app=${app_id}`;
         document.getElementById("login-link").href = url;
         document.getElementById("login-link").textContent = url;
       }
@@ -96,7 +96,7 @@
       document.getElementById("app_id").value = app_id?.length ? app_id : "my-app-id";
       document.getElementById("client_id").value = client_id ?? "";
       document.getElementById("client_secret").value = client_secret ?? "";
-      document.getElementById("callback").value = callback?.length ? callback : `${location.protocol}//${location.host}/github/result`;
+      document.getElementById("callback").value = callback?.length ? callback : `${location.protocol}//${location.host}${location.pathname}github/result`;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
