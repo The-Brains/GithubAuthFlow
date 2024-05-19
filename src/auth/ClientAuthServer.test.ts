@@ -39,17 +39,17 @@ describe('GithubAuthServer', () => {
     expect(response.body).toHaveProperty('clients');
     expect(response.body.clients).toEqual([{
       app_id: 'app1',
-      loginUrl: 'http://localhost/github/login?app=app1',
-      authUrl: 'http://localhost/github/auth?app=app1',
+      loginUrl: 'http://localhost/github/login/?app=app1',
+      authUrl: 'http://localhost/github/auth/?app=app1',
       callbackUrl: 'http://localhost/callback',
       oneTime: undefined,
     }]);
   });
 
-  test('GET /github/login?app=app_id should redirect to auth URL', async () => {
+  test('GET /github/login/?app=app_id should redirect to auth URL', async () => {
     const authUrl = githubAuth.getAuthUrl({
       app_id: clientConfig.app_id,
-      redirect_uri: `http://localhost/github/auth?app=${clientConfig.app_id}`,
+      redirect_uri: `http://localhost/github/auth/?app=${clientConfig.app_id}`,
     });
 
     const response = await request(app).get(`/github/login?app=${clientConfig.app_id}`)
@@ -58,27 +58,27 @@ describe('GithubAuthServer', () => {
     expect(response.headers.location).toBe(authUrl);
   });
 
-  test('GET /github/login?app=app_id should return 404 if app_id is invalid', async () => {
+  test('GET /github/login/?app=app_id should return 404 if app_id is invalid', async () => {
     const response = await request(app).get('/github/login?app=invalid');
     expect(response.status).toBe(404);
     expect(response.body).toHaveProperty('success', false);
     expect(response.body).toHaveProperty('message');
   });
 
-  test('GET /github/auth?app=app_id should redirect to result URL with auth token', async () => {
+  test('GET /github/auth/?app=app_id should redirect to result URL with auth token', async () => {
     const fetchCallbackWithAuthTokenMock = jest.spyOn(githubAuth, 'fetchCallbackWithAuthToken').mockResolvedValue('http://localhost/github/result?access_token=token123');
 
-    const response = await request(app).get(`/github/auth?app=${clientConfig.app_id}&state=state123&code=code123`);
+    const response = await request(app).get(`/github/auth/?app=${clientConfig.app_id}&state=state123&code=code123`);
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe('http://localhost/github/result?access_token=token123');
 
     fetchCallbackWithAuthTokenMock.mockRestore();
   });
 
-  test('GET /github/auth?app=app_id should return 404 if unable to get auth token', async () => {
+  test('GET /github/auth/?app=app_id should return 404 if unable to get auth token', async () => {
     const fetchCallbackWithAuthTokenMock = jest.spyOn(githubAuth, 'fetchCallbackWithAuthToken').mockResolvedValue(undefined);
 
-    const response = await request(app).get(`/github/auth?app=${clientConfig.app_id}&state=state123&code=code123`);
+    const response = await request(app).get(`/github/auth/?app=${clientConfig.app_id}&state=state123&code=code123`);
     expect(response.status).toBe(404);
     expect(response.text).toBe("Unable to get auth token.");
 

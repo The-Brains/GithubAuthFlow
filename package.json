@@ -6,7 +6,7 @@
   "scripts": {
     "build": "bun i && bun run bundler/bundler.ts && bun run build:declaration",
     "build:declaration": "tsc --emitDeclarationOnly --project tsconfig.types.json",
-    "build:demo": "cd example && bun i && bun run build && cd ..",
+    "build:demo": "bun link && cd example && bun i && bun run build && cd ..",
     "auto-publish": "npm explore @dobuki/auto-publish -- bun run auto-publish \"$(pwd)\"",
     "test": "bun test"
   },
