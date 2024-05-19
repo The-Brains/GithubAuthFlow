@@ -75,7 +75,7 @@
 
     function updateCallbacks() {
       const { app_id, callback, client_id, client_secret } = getInputs();
-      const url = `http://${location.host}${location.pathname}github/auth/?app=${app_id}`;
+      const url = `${location.protocol}://${location.host}${location.pathname}github/auth/?app=${app_id}`;
       document.getElementById("callbackUrl").innerText = url;
 
       document.getElementById("app_id_code").textContent = app_id;
@@ -83,7 +83,7 @@
       document.getElementById("client_secret_code").textContent = client_secret;
       document.getElementById("callback_code").textContent = callback;
       {
-        const url = `http://${location.host}${location.pathname}${loginPath}?app=${app_id}`;
+        const url = `${location.protocol}://${location.host}${location.pathname}${loginPath}?app=${app_id}`;
         document.getElementById("login-link").href = url;
         document.getElementById("login-link").textContent = url;
       }
